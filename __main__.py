@@ -47,14 +47,27 @@ class AsyncSpeechRecognitionSink(SpeechRecognitionSink):
 
 async def handle_text(play, user: discord.User, text: str):
     accuracy = get_accuracy_full(text)
-    if accuracy > 0.9: await play()
-    print(f"{user.name} said: {text}  |  accuracy {accuracy} > 0.9")
+    if accuracy > 0.45: await play()
+    print(f"{user.name} said: {text}  |  accuracy {accuracy} > 0.45")
 
 def get_accuracy_full(text: str):
-    index = text.find("hit")
-    if index < 0:
+    text = text.lower()
+    start = 0 if text.startswith("hit") else text.find(" hit")
+    if start < 0:
         return 0
-    text = text[index:]
+    
+    if get_accuracy(text[start:], "hit the") > 0.65:
+        return 1
+
+    last_word = text.find("a", start)
+    if last_word < 0:
+        return 0
+
+    end = text.find(" ", last_word)
+    if end < 0:
+        end = len(text)
+    
+    text = text[start:end]
 
     accuracyHitThe = get_accuracy(text, "hit the")
     accuracyAw = get_accuracy(text, "auto") + get_accuracy(text, "all") + get_accuracy(text, "aw")

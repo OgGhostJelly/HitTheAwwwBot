@@ -2,6 +2,8 @@ import discord, os, asyncio
 from discord.ext import voice_recv  
 from discord.ext.voice_recv.extras import SpeechRecognitionSink  
 
+SOUNDBOARD_ID = 1363476761576210616
+
 intents = discord.Intents()
 intents.voice_states = True
 intents.guilds = True
@@ -25,7 +27,7 @@ async def join(interaction: discord.Interaction):
     voice_client = await channel.connect(cls=voice_recv.VoiceRecvClient)
     await interaction.response.send_message(f"Joined {channel.name}!")
 
-    soundboard = interaction.guild.get_soundboard_sound(1363476761576210616)
+    soundboard = interaction.guild.get_soundboard_sound(SOUNDBOARD_ID)
     play = lambda: channel.send_sound(soundboard)
 
     sink = AsyncSpeechRecognitionSink(

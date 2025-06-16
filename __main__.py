@@ -16,7 +16,7 @@ async def on_ready():
     await tree.sync()
     print(f"We have logged in as '{client.user}'")
 
-@tree.command(name="join", description="Join your voice channel")
+@tree.command(name="join", description="Join your voice channel.")
 async def join(interaction: discord.Interaction):
     if interaction.user.voice is None:
         return await interaction.response.send_message("You are not in a voice channel!", ephemeral=True)
@@ -24,8 +24,10 @@ async def join(interaction: discord.Interaction):
         return await interaction.response.send_message("Failed to join voice channel, I may not have the required permissions.", ephemeral=True)
 
     channel = interaction.user.voice.channel;
-    voice_client = await channel.connect(cls=voice_recv.VoiceRecvClient)
-    await interaction.response.send_message(f"Joined {channel.name}!")
+    try:
+        voice_client = await channel.connect(cls=voice_recv.VoiceRecvClient)
+    except Exception as e:
+        return await interaction.response.send_message(f"{e}")
 
     soundboard = interaction.guild.get_soundboard_sound(SOUNDBOARD_ID)
     play = lambda: channel.send_sound(soundboard)
@@ -35,8 +37,9 @@ async def join(interaction: discord.Interaction):
         phrase_time_limit=16,
         async_text_cb=lambda user, text: handle_text(play, user, text)
     )
-    
     voice_client.listen(sink)
+    
+    await interaction.response.send_message(f"Joined {channel.name}!")
 
 class AsyncSpeechRecognitionSink(SpeechRecognitionSink):  
     def __init__(self, async_text_cb=None, **kwargs):  
@@ -48,17 +51,20 @@ class AsyncSpeechRecognitionSink(SpeechRecognitionSink):
             self._await(self.async_text_cb(user, text))
 
 async def handle_text(play, user: discord.User, text: str):
-    accuracy = get_accuracy_full(text)
+    accuracy = get_accuracy(text)
     if accuracy > 0.45: await play()
     print(f"{user.name} said: {text}  |  accuracy {accuracy} > 0.45")
 
-def get_accuracy_full(text: str):
+def get_accuracy(text: str):
+    """
+    Score the similarity of the speech-to-text output and the phrase 'hit the awww button'
+    """
     text = text.lower()
     start = 0 if text.startswith("hit") else text.find(" hit")
     if start < 0:
         return 0
     
-    if get_accuracy(text[start:], "hit the") > 0.65:
+    if bigram_similarity(text[start:], "hit the") > 0.65:
         return 1
 
     last_word = text.find("a", start)
@@ -71,11 +77,12 @@ def get_accuracy_full(text: str):
     
     text = text[start:end]
 
-    accuracyHitThe = get_accuracy(text, "hit the")
-    accuracyAw = get_accuracy(text, "auto") + get_accuracy(text, "all") + get_accuracy(text, "aw")
+    accuracyHitThe = bigram_similarity(text, "hit the")
+    accuracyAw = bigram_similarity(text, "auto") + bigram_similarity(text, "all") + bigram_similarity(text, "aw")
     return accuracyHitThe + accuracyAw
 
-def get_accuracy(s: str, o: str):
+def bigram_similarity(s: str, o: str):
+    """Compare the bigrams of two strings and score their similarity."""
     def createBigram(s: str) -> set:
         bigram = set()
         for i in range(len(s)-1):
@@ -86,9 +93,14 @@ def get_accuracy(s: str, o: str):
     oBigram = createBigram(o.strip().lower())
     bigram = sBigram.intersection(oBigram)
 
+    if not sBigram and not oBigram:  # Both strings are empty
+        return 1.0  # Consider them identical
+    if not sBigram or not oBigram:  # One of the strings is empty
+        return 0.0  # No similarity
+
     return (len(bigram) * 2) / (len(sBigram) + len(oBigram))
 
-@tree.command(name="leave", description="Leave the current voice channel")
+@tree.command(name="leave", description="Leave the current voice channel.")
 async def leave(interaction: discord.Interaction):
     if interaction.guild.voice_client is None:
         return await interaction.response.send_message("I am not in a voice channel!", ephemeral=True)
@@ -97,9 +109,14 @@ async def leave(interaction: discord.Interaction):
     await interaction.guild.voice_client.disconnect()
     await interaction.response.send_message(f"Left {channel.name}.")
 
-@tree.command(name="reload", description="Reload the bot")
+@tree.command(name="wtfisthis", description="Explains wtf this bot is.")
+async def wtfisthis(interaction: discord.Interaction):
+    return await interaction.response.send_message("Go in voice chat, run the `/join` command. Then say \"hit the awww button\" and the bot will play the 'awww' soundboard. It uses speech recognition stuff, it's pretty shit so you'll probably have to say it a few times... and also say it in a british accent that helps for some reason sorry not sorry.")
+
+@tree.command(name="reload", description="Reload the bot. For developers.")
 async def reload(interaction: discord.Interaction):
-    tree.sync(guild=interaction.guild)
+    await tree.sync(guild=interaction.guild)
+    await interaction.response.send_message(f"Reloaded!")
 
 token = os.getenv('TOKEN')
 if token:

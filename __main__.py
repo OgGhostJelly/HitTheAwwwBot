@@ -111,7 +111,7 @@ async def leave(interaction: discord.Interaction):
 
 @tree.command(name="wtfisthis", description="Explains wtf this bot is.")
 async def wtfisthis(interaction: discord.Interaction):
-    return await interaction.response.send_message("Go in voice chat, run the `/join` command. Then say \"hit the awww button\" and the bot will play the 'awww' soundboard. It uses speech recognition stuff, it's pretty shit so you'll probably have to say it a few times... and also say it in a british accent that helps for some reason sorry not sorry.")
+    return await interaction.response.send_message("Haha, definitely not government spyware :)\n\n- Go in voice chat\n- Run the `/join` command\n- Say \"hit the awww button\"\nand the bot will play the 'awww' soundboard.\n\nIt uses speech recognition stuff, it's pretty shit so you'll probably have to say it a few times... and also say it in a british accent that helps for some reason sorry not sorry.")
 
 @tree.command(name="reload", description="Reload the bot. For developers.")
 async def reload(interaction: discord.Interaction):

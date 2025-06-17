@@ -34,7 +34,7 @@ async def join(interaction: discord.Interaction):
 
     sink = AsyncSpeechRecognitionSink(
         default_recognizer='google',
-        phrase_time_limit=16,
+        phrase_time_limit=30,
         async_text_cb=lambda user, text: handle_text(play, user, text)
     )
     voice_client.listen(sink)
@@ -60,6 +60,10 @@ def get_accuracy(text: str):
     Score the similarity of the speech-to-text output and the phrase 'hit the awww button'
     """
     text = text.lower()
+
+    if "50" in text:
+        return 1
+
     start = 0 if text.startswith("hit") else text.find(" hit")
     if start < 0:
         return 0

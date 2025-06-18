@@ -43,7 +43,7 @@ async def join(interaction: discord.Interaction):
         current_time = datetime.datetime.now()
         delta = current_time - last_time
 
-        if any(score > 0.1 for score in predictions.values()) and delta.total_seconds() > 1.0:
+        if any(score > 0.5 for score in predictions.values()) and delta.total_seconds() > 1.0:
             print(f"Wake word detected from {user.name}: {predictions}")
             last_time = current_time
             await channel.send_sound(soundboard)

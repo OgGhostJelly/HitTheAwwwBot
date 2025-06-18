@@ -1,10 +1,11 @@
-import discord, os
+import discord, os, datetime
 from discord.ext.voice_recv.voice_client import VoiceRecvClient
 
 import openwakeword
 from oww_sink import AsyncOpenWakeWordSink
 
 SOUNDBOARD_ID = 1363476761576210616
+MODEL = "hit_the_aw_button.tflite"
 
 intents = discord.Intents()
 intents.voice_states = True
@@ -34,19 +35,26 @@ async def join(interaction: discord.Interaction):
         return await interaction.response.send_message(f"{e}")
 
     soundboard = interaction.guild.get_soundboard_sound(SOUNDBOARD_ID)
-    
+    last_time = datetime.datetime.min
+
+    async def handle_predictions(user: discord.User, predictions: dict):
+        nonlocal last_time
+
+        current_time = datetime.datetime.now()
+        delta = current_time - last_time
+
+        if any(score > 0.1 for score in predictions.values()) and delta.total_seconds() > 1.0:
+            print(f"Wake word detected from {user.name}: {predictions}")
+            last_time = current_time
+            await channel.send_sound(soundboard)
+
     sink = AsyncOpenWakeWordSink(
-        wakeword_models=["./models/hit_the_aw_button.tflite"],
-        async_pred_cb=lambda user, predictions: handle_prediction(user, predictions, channel, soundboard)
+        wakeword_models=["./models/" + MODEL],
+        async_pred_cb=handle_predictions
     )
     voice_client.listen(sink)
     
     await interaction.response.send_message(f"Joined {channel.name}!")
-
-async def handle_prediction(user: discord.User, predictions: dict, channel: discord.channel.VocalGuildChannel, soundboard: discord.SoundboardSound):
-    if any(score > 0.5 for score in predictions.values()):  
-        print(f"Wake word detected from {user.name}: {predictions}")
-        await channel.send_sound(soundboard)
 
 @tree.command(name="leave", description="Leave the current voice channel.")
 async def leave(interaction: discord.Interaction):

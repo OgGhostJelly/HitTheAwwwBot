@@ -47,6 +47,8 @@ async def join(interaction: discord.Interaction):
             print(f"Wake word detected from {user.name}: {predictions}")
             last_time = current_time
             await channel.send_sound(soundboard)
+        elif any(score > 0.1 for score in predictions.values()):
+            print(f"Possible wake word detected from {user.name}: {predictions}")
 
     sink = AsyncOpenWakeWordSink(
         wakeword_models=["./models/" + MODEL],
